@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
-#include <bits/stdc++.h>
+#include <math.h>
 
 void initIMU()
 {

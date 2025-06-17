@@ -1,9 +1,5 @@
 #include <Arduino.h>
 
-int targetSpeed = 50;
-int currentSpeed = 0;
-const int step = 10;
-
 const int DIR1 = 15;
 const int PWM1 = 2;
 const int DIR2 = 33;
@@ -137,7 +133,6 @@ void stop()
     m2(1);
     m3(1);
     m4(1);
-    currentSpeed = 0;
 }
 
 void initMotor()

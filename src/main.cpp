@@ -1,7 +1,6 @@
 #include <Arduino.h>
-#include <HardwareSerial.h>
-#include <bits/stdc++.h>
 
+#include <controller.hpp>
 #include <motors.hpp>
 #include <imu.hpp>
 
@@ -12,31 +11,48 @@ void setup()
 
   initMotor(); // init motor driver
 
-  // wait for BOOT btn to be pressed
-  pinMode(0, INPUT);
-  while (1) {
-    if (digitalRead(0) == 0) break;
-    delay(25);
-  }
+  // init bluetooth serial as master mode
+  initController(); // init controller
 }
 
+int targetSpeed = 0;
+const int step = 10;
+int currentSpeed = 0;
 
 void loop()
 {
-  long long int startTime = millis();
-  while (millis() - startTime <= 5000) {
-    if (currentSpeed <= targetSpeed) currentSpeed += step;
-    forward(currentSpeed, calculateYawPID(0.0, getIMUYaw()));
-    delay(50);
+  String currentCommand = fetchController();
+  if (currentCommand == "F")
+  {
+    Serial.println("Forward");
+    // targetSpeed = 50;
+    forward(50, calculateYawPID(0, getIMUYaw()));
+
   }
-  stop();
-  delay(500);
-  startTime = millis();
-  while (millis() - startTime <= 5000) {
-    if (currentSpeed <= targetSpeed) currentSpeed += step;
-    backward(currentSpeed, calculateYawPID(0.0, getIMUYaw()));
-    delay(50);
+  else if (currentCommand == "B")
+  {
+    Serial.println("Backward");
+    // targetSpeed = -50;
+    backward(50, calculateYawPID(0, getIMUYaw()));
+
   }
-  stop();
-  delay(500);
+  else stop();
+  delay(50);
+    // targetSpeed = 0;
+
+  // if (currentSpeed != targetSpeed)
+  // {
+  //   if (currentSpeed < targetSpeed)
+  //     currentSpeed += step;
+  //   else if (currentSpeed > targetSpeed)
+  //     currentSpeed -= step;
+
+  //   // output to motor
+  //   if (currentSpeed > 0)
+  //     forward(currentSpeed, getIMUYaw());
+  //   else if (currentSpeed < 0)
+  //     backward(currentSpeed, getIMUYaw());
+  //   else if (currentSpeed == 0)
+  //     stop();
+  // }
 }
