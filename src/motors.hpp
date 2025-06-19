@@ -111,20 +111,34 @@ void backward(int speed, int pid = 0)
     m4(-(speed + pid));
 }
 
-void turnRight(int speed, int pid = 0)
+void sideRight(int speed, int pid = 0)
 {
     m1((speed - pid));
-    m2(-(speed + pid));
+    m2(-(speed - pid));
     m3((speed + pid));
-    m4(-(speed - pid));
+    m4(-(speed + pid));
 }
 
-void turnLeft(int speed, int pid = 0)
+void sideLeft(int speed, int pid = 0)
 {
     m1(-(speed + pid));
-    m2((speed - pid));
+    m2((speed + pid));
     m3(-(speed - pid));
-    m4((speed + pid));
+    m4((speed - pid));
+}
+
+void rotateRight(int speed) {
+    m1(speed);
+    m2(-speed);
+    m3(-speed);
+    m4(speed);
+}
+
+void rotateLeft(int speed) {
+    m1(-speed);
+    m2(speed);
+    m3(speed);
+    m4(-speed);
 }
 
 void stop()

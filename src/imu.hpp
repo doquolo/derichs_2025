@@ -17,15 +17,16 @@ int16_t getIMUYaw() {
 }
 
 float Kp = .6, Ki = 0.0, Kd = .6;
-float currentYaw, error, prevError = 0, integral = 0;
+float currentYaw, currentTarget, error, prevError = 0, integral = 0;
 
 int calculateYawPID(int16_t target, int16_t yaw) {
   currentYaw = ((float) yaw) / 10.0; // yaw value = (yaw angle * 10)
-  error = target - currentYaw;
+  currentTarget = ((float) target) / 10.0; // yaw value = (yaw angle * 10)
+  error = currentTarget - currentYaw;
   integral += error;
   float derivative = error - prevError;
   prevError = error;
   float pidOutput = (float)(Kp * error) + (float)(Ki * integral) + (float)(Kd * derivative);
-  Serial.printf("Yaw: %f, Error: %f\n", currentYaw, pidOutput); // debug only
+  // Serial.printf("Yaw: %f, Error: %f\n", currentYaw, pidOutput); // debug only
   return floor(pidOutput);
 }
