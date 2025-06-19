@@ -29,7 +29,6 @@ void loop()
 {
   String currentCommand = fetchController();
   Serial.printf("Angle: %i\n", currentAngle);
-  // Serial.printf("Command: %s\n", currentCommand);
   if (currentCommand != "-1")
   {
     timeFromLastPacket = millis();
