@@ -4,16 +4,15 @@
 #include <motors.hpp>
 #include <imu.hpp>
 
-void setup()
-{
-  Serial.begin(115200);
+// // Servo
+// #include <ServoMotor.hpp>
+// ServoMotor s1(10, 9, 13, 19.5, 4);
 
-  initIMU();
-
-  initMotor();
-
-  initController(); 
-}
+// void initServoMotor() { 
+//   s1.begin();
+//   s1.setDriveSpeed(3500);
+// }
+ 
 
 // GLOBAL MOVEMENT VARIABLES
 int16_t currentAngle = 0;
@@ -25,6 +24,49 @@ int currentSpeedUse = 0;
 // MODIFIABLE MOVEMENT VARIABLES
 const int speed[3] = {50, 100, 150};
 const int step[3] = {5, 10, 15};
+
+// GLOBAL VALVES TRIGGER
+const int valveInterval = 250;
+const int valveTrigger1[16] = {41, 39, 37, 35, 33, 31, 29, 27, 40, 38, 36, 34, 32, 30, 28, 26};
+long long valveTime1[16] = {0};
+
+void initValves() {
+  for (auto x : valveTrigger1) {
+    pinMode(x, OUTPUT);
+    digitalWrite(x, LOW);
+  }
+  delay(50);
+  for (auto x : valveTrigger1) {
+    digitalWrite(x, HIGH);
+  }
+}
+
+
+void setup()
+{
+  Serial.begin(115200);
+
+  initIMU();
+
+  initMotor();
+
+  // initServoMotor();
+  
+  initValves();
+
+  initController(); 
+
+  // testing
+  pinMode(42, INPUT);
+  pinMode(45, INPUT);
+  pinMode(10, OUTPUT);
+  pinMode(9, OUTPUT);
+  digitalWrite(10, HIGH);
+  digitalWrite(9, HIGH);
+
+}
+
+
 
 // movement logic
 void processMovement()
@@ -93,7 +135,55 @@ void processMovement()
 }
 
 // periperals logic
-void processPeriperals() { return; }
+void processPeriperals() {
+  if (controller.LD.A7) {
+    if (millis() - valveTime1[11] > valveInterval) {
+      digitalWrite(valveTrigger1[11], LOW); //unlock
+      Serial.println("Unlocked");
+      if (!digitalRead(45)) { // go up
+        Serial.println("Going up");
+        digitalWrite(9, HIGH);
+        analogWrite(10, 255-10);
+        while (digitalRead(42)) {
+          delay(25);
+        }
+        analogWrite(10, 255-3);
+
+        Serial.println("Done");
+      } else if (!digitalRead(42)) { // drop down
+        Serial.println("Going down");
+        digitalWrite(9, LOW);
+        analogWrite(10, 255-10);
+        while (digitalRead(45)) {
+          delay(25);
+        }
+        digitalWrite(10, HIGH);
+        Serial.println("Done");
+      }
+      Serial.println("Locked");
+      digitalWrite(valveTrigger1[11], HIGH); //lock
+      valveTime1[11] = millis();
+    }
+  }
+  if (controller.RS.A12) {
+    if (millis() - valveTime1[7] > valveInterval) {
+      digitalWrite(valveTrigger1[7], !digitalRead(valveTrigger1[7]));
+      valveTime1[7] = millis();
+    }
+  }
+  if (controller.RS.B9) {
+    if (millis() - valveTime1[6] > valveInterval) {
+      digitalWrite(valveTrigger1[6], !digitalRead(valveTrigger1[6]));
+      valveTime1[6] = millis();
+    }
+  }
+  if (controller.RS.PB11) {
+    if (millis() - valveTime1[5] > valveInterval) {
+      digitalWrite(valveTrigger1[5], !digitalRead(valveTrigger1[5]));
+      valveTime1[5] = millis();
+    }
+  }
+}
 
 void loop()
 {
@@ -109,9 +199,9 @@ void loop()
     // Movement
 
     // Speed
-    if (controller.RS.A12) currentSpeedUse = 0;
-    else if (controller.RS.B9) currentSpeedUse = 1;
-    else if (controller.RS.PB11) currentSpeedUse = 2;
+    if (controller.LS.PB10) currentSpeedUse = 0;
+    else if (controller.LS.A4) currentSpeedUse = 1;
+    else if (controller.LS.B13) currentSpeedUse = 2;
 
     // CW/CCW
     if (controller.LD.A6) targetSpeed = speed[currentSpeedUse];
