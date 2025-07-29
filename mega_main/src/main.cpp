@@ -7,22 +7,26 @@
 void setup()
 {
   Serial.begin(115200);
-  // initIMU(); // init imu
 
-  initMotor(); // init motor driver
+  initIMU();
 
-  initController(); // init controller
+  initMotor();
+
+  initController(); 
 }
 
+// GLOBAL MOVEMENT VARIABLES
+int16_t currentAngle = 0;
 int direction = 0;
 int currentSpeed = 0;
-int16_t currentAngle = 0;
-
 int targetSpeed = 0;
-const int speed[3] = {50, 100, 150};
-const int step[3] = {5, 10, 15};
 int currentSpeedUse = 0;
 
+// MODIFIABLE MOVEMENT VARIABLES
+const int speed[3] = {50, 100, 150};
+const int step[3] = {5, 10, 15};
+
+// movement logic
 void processMovement()
 {
   if (currentSpeed != targetSpeed)
@@ -40,7 +44,7 @@ void processMovement()
   {
     switch (direction)
     {
-    case 0:
+    case 0: // FW/BW
     {
       if (currentSpeed > 0)
         forward(currentSpeed, 0);
@@ -48,7 +52,7 @@ void processMovement()
         backward(abs(currentSpeed), 0);
       break;
     }
-    case 1:
+    case 1: // Side move
     {
       if (currentSpeed > 0)
         sideRight(currentSpeed, 0);
@@ -56,7 +60,7 @@ void processMovement()
         sideLeft(abs(currentSpeed), 0);
       break;
     }
-    case 2:
+    case 2: // spin
     {
       if (currentSpeed > 0)
       {
@@ -70,6 +74,10 @@ void processMovement()
       }
       break;
     }
+    case 3: // drift
+    {
+      break;
+    }
     default:
     {
       stop();
@@ -79,49 +87,60 @@ void processMovement()
   }
 }
 
+// periperals logic
 void processPeriperals() { return; }
 
 void loop()
 {
   fetchController();
-
-  if (connected)
+  
+  if (connected) // if latency < 350ms
   {
+
+    // Periperals
+    processPeriperals();
+    // end Periperals
+
     // Movement
-    if (controller.LD.A6)
-    {
-      direction = 0;
-      targetSpeed = speed[currentSpeedUse];
-    }
-    else if (controller.LD.B2)
-    {
-      direction = 0;
-      targetSpeed = -speed[currentSpeedUse];
-    }
-    else if (controller.RD.B4)
-    {
-      direction = 1;
-      targetSpeed = speed[currentSpeedUse];
-    }
-    else if (controller.RD.B3)
-    {
-      direction = 1;
-      targetSpeed = -speed[currentSpeedUse];
-    }
-    else {
-      direction = 0;
-      targetSpeed = 0;
-    }
-    Serial.print("DIR: "); Serial.print(direction);
-    Serial.print(" SPEED: "); Serial.println(targetSpeed);
+
+    // Speed
+    if (controller.RS.A12) currentSpeedUse = 0;
+    else if (controller.RS.B8) currentSpeedUse = 1;
+    else if (controller.RS.B9) currentSpeedUse = 2;
+
+    // CW/CCW
+    if (controller.LD.A6) targetSpeed = speed[currentSpeedUse];
+    else if (controller.LD.B2) targetSpeed = -speed[currentSpeedUse];
+    else targetSpeed = 0;
+
+    // side move
+    // direction case:
+    // 0: forward/backward
+    // 1: side move
+    // 2: spin
+    // 3: drift
+    if (controller.RD.B4) direction = 1;
+    else if (controller.RD.B3) direction = 1;
+    // spin
+    else if (controller.LS.A0) direction = 2;
+    else if (controller.RS.PB11) direction = 2;
+    // drift
+    else if (controller.LS.A3) direction = 2;
+    else if (controller.RS.A1) direction = 2;
+    // forward/backward 
+    else direction = 0;
+
     processMovement();
+
+    // end Movement
+
   }
-  else
+  else // latency > 350ms => might be disconnected
   {
     stop();
-    while (1)
+    while (1) // kill all robot movement
     {
-      Serial.print(".");
+      Serial.print("."); 
     }
   }
   delay(25);
