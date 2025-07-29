@@ -101,6 +101,7 @@ void initController()
 {
     Serial3.begin(115200);
     resetController();
+    prev_data_recv = millis(); // important
     connected = 1;
 }
 

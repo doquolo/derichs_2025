@@ -42,40 +42,45 @@ void processMovement()
     stop();
   else
   {
-    switch (direction)
+    switch (abs(direction))
     {
-    case 0: // FW/BW
+    case 0:
     {
       if (currentSpeed > 0)
-        forward(currentSpeed, 0);
+        forward(currentSpeed, calculateYawPID(currentAngle, -getIMUYaw()));
       else if (currentSpeed < 0)
-        backward(abs(currentSpeed), 0);
+        backward(abs(currentSpeed), calculateYawPID(currentAngle, -getIMUYaw()));
       break;
     }
-    case 1: // Side move
+    case 1:
     {
-      if (currentSpeed > 0)
-        sideRight(currentSpeed, 0);
-      else if (currentSpeed < 0)
-        sideLeft(abs(currentSpeed), 0);
+      if (direction > 0)
+        sideRight(currentSpeed, calculateYawPID(currentAngle, -getIMUYaw()));
+      else if (direction < 0)
+        sideLeft(currentSpeed, calculateYawPID(currentAngle, -getIMUYaw()));
       break;
     }
-    case 2: // spin
+    case 2:
     {
-      if (currentSpeed > 0)
+      if (direction > 0)
       {
         rotateRight(currentSpeed);
-        currentAngle = getIMUYaw();
       }
-      else if (currentSpeed < 0)
+      else if (direction < 0)
       {
-        rotateLeft(abs(currentSpeed));
-        currentAngle = getIMUYaw();
+        rotateLeft(currentSpeed);
       }
+      currentAngle = -getIMUYaw();
       break;
     }
-    case 3: // drift
+    case 3:
     {
+      if (direction > 0) {
+        driftRight(currentSpeed);
+      } else if (direction < 0) {
+        driftLeft(currentSpeed);
+      }
+      currentAngle = -getIMUYaw();
       break;
     }
     default:
@@ -105,8 +110,8 @@ void loop()
 
     // Speed
     if (controller.RS.A12) currentSpeedUse = 0;
-    else if (controller.RS.B8) currentSpeedUse = 1;
-    else if (controller.RS.B9) currentSpeedUse = 2;
+    else if (controller.RS.B9) currentSpeedUse = 1;
+    else if (controller.RS.PB11) currentSpeedUse = 2;
 
     // CW/CCW
     if (controller.LD.A6) targetSpeed = speed[currentSpeedUse];
@@ -120,13 +125,13 @@ void loop()
     // 2: spin
     // 3: drift
     if (controller.RD.B4) direction = 1;
-    else if (controller.RD.B3) direction = 1;
+    else if (controller.RD.B3) direction = -1;
     // spin
-    else if (controller.LS.A0) direction = 2;
-    else if (controller.RS.PB11) direction = 2;
-    // drift
     else if (controller.LS.A3) direction = 2;
-    else if (controller.RS.A1) direction = 2;
+    else if (controller.RS.C13) direction = -2;
+    // drift
+    else if (controller.LS.A0) direction = 2;
+    else if (controller.RS.A1) direction = -2;
     // forward/backward 
     else direction = 0;
 

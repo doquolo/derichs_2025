@@ -141,6 +141,19 @@ void rotateLeft(int speed) {
     m4(-speed);
 }
 
+void driftLeft(int speed) {
+    m1(speed*(1));
+    m2(speed*(0.5));
+    m3(speed*(0.5));
+    m4(speed*1.5);
+}
+void driftRight(int speed) {
+    m1(speed*(0.5));
+    m2(speed*(1));
+    m3(speed*1.5);
+    m4(speed*(0.5));
+}
+
 void stop()
 {
     m1(1);
