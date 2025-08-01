@@ -27,10 +27,10 @@ const uint8_t END_MARKER = 0x7F;   // DEL (127)
 // callback function that will be executed when data is received
 void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len)
 {
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  digitalWrite(13, !digitalRead(13));
   Serial2.write(START_MARKER);
   for (int i = 0; i < len; i++) Serial2.write(incomingData[i]);
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  digitalWrite(13, !digitalRead(13));
 }
 
 void initController()
@@ -56,9 +56,9 @@ void initController()
 void setup()
 {
   Serial.begin(115200);
-  Serial2.begin(115200);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  Serial2.begin(115200, SERIAL_8N1, 16, 17);
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
   initController();
 }
 
