@@ -44,6 +44,7 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
 
@@ -52,25 +53,25 @@ UART_HandleTypeDef huart1;
 #pragma pack(1) // Disable padding
 struct CONTROLLER_READOUT {
 	struct {
-		uint8_t A0, A3;
-		uint8_t PB10, A4, B13;
-		uint8_t A5;
+		uint8_t A2, A3;
+		uint8_t B8, B13, A4;
+		uint8_t A0;
 	}LS; // left shoulder
 	struct {
-		uint8_t B12, A6, B2, A7;
+		uint8_t A8, A11, B2, B12;
 	}LD; // left dpad
 
 	struct {
 		uint8_t C13, A1;
-		uint8_t A12, B9, PB11;
-		uint8_t B8;
+		uint8_t A5, A12, B9;
+		uint8_t B11;
 	}RS; // right shoulder
 	struct {
-		uint8_t B3, B5, A15, B4;
+		uint8_t B5, B4, A15, B3;
 	}RD; // right dpad
 
 	struct {
-		uint8_t A2, C15, C14;
+		uint8_t C15, C14;
 	}ALT; // alternate button
 
 	struct {
@@ -85,6 +86,39 @@ struct CONTROLLER_READOUT {
 
 } controller;
 #pragma pack()
+
+struct {
+	struct {
+		uint32_t A2, A3;
+		uint32_t B8, B13, A4;
+		uint32_t A0;
+	}LS; // left shoulder
+	struct {
+		uint32_t A8, A11, B2, B12;
+	}LD; // left dpad
+
+	struct {
+		uint32_t C13, A1;
+		uint32_t A5, A12, B9;
+		uint32_t B11;
+	}RS; // right shoulder
+	struct {
+		uint32_t B5, B4, A15, B3;
+	}RD; // right dpad
+
+	struct {
+		uint32_t C15, C14;
+	}ALT; // alternate button
+
+	struct {
+		uint32_t BTN;
+	}JOY; // joystick
+
+	struct {
+		uint32_t BTN;
+	}ENC; // encoder
+
+} controller_debounced;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,49 +128,62 @@ static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
+const uint32_t buttonDebounceTime = 50; // ms
+static uint8_t handleButtonDebounce(uint32_t* prev_time, uint32_t now, uint8_t newState, uint8_t currentState) {
+	if (newState == currentState) return currentState;
+	else {
+		if (now - *prev_time > buttonDebounceTime) {
+			*prev_time = now;
+			return newState;
+		}
+		else return currentState;
+	}
+}
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM2) {
-		// Update button values
+		uint32_t now = HAL_GetTick(); // Current time in ms
+
 		// Left shoulder
-		controller.LS.A0 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
-		controller.LS.A3 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3);
-		controller.LS.PB10 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
-		controller.LS.A4 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4);
-		controller.LS.B13 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13);
-		controller.LS.A5 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5);
+		controller.LS.A2   = handleButtonDebounce(&controller_debounced.LS.A2,  now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2),  controller.LS.A2);
+		controller.LS.A3   = handleButtonDebounce(&controller_debounced.LS.A3,  now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3),  controller.LS.A3);
+		controller.LS.B8   = handleButtonDebounce(&controller_debounced.LS.B8,  now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8),  controller.LS.B8);
+		controller.LS.B13  = handleButtonDebounce(&controller_debounced.LS.B13, now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13), controller.LS.B13);
+		controller.LS.A4   = handleButtonDebounce(&controller_debounced.LS.A4,  now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4),  controller.LS.A4);
+		controller.LS.A0   = handleButtonDebounce(&controller_debounced.LS.A0,  now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0),  controller.LS.A0);
 
 		// Left dpad
-		controller.LD.B12 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12);
-		controller.LD.A6 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6);
-		controller.LD.B2 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2);
-		controller.LD.A7 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7);
+		controller.LD.A8   = handleButtonDebounce(&controller_debounced.LD.A8,  now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8),  controller.LD.A8);
+		controller.LD.A11  = handleButtonDebounce(&controller_debounced.LD.A11, now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_11), controller.LD.A11);
+		controller.LD.B2   = handleButtonDebounce(&controller_debounced.LD.B2,  now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2),  controller.LD.B2);
+		controller.LD.B12  = handleButtonDebounce(&controller_debounced.LD.B12, now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12), controller.LD.B12);
 
 		// Right shoulder
-		controller.RS.C13 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
-		controller.RS.A1 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1);
-		controller.RS.A12 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_12);
-		controller.RS.B9 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9);
-		controller.RS.PB11 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_11);
-		controller.RS.B8 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8);
+		controller.RS.C13  = handleButtonDebounce(&controller_debounced.RS.C13, now, HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13), controller.RS.C13);
+		controller.RS.A1   = handleButtonDebounce(&controller_debounced.RS.A1,  now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1),  controller.RS.A1);
+		controller.RS.A5   = handleButtonDebounce(&controller_debounced.RS.A5,  now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5),  controller.RS.A5);
+		controller.RS.A12  = handleButtonDebounce(&controller_debounced.RS.A12, now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_12), controller.RS.A12);
+		controller.RS.B9   = handleButtonDebounce(&controller_debounced.RS.B9,  now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9),  controller.RS.B9);
+		controller.RS.B11  = handleButtonDebounce(&controller_debounced.RS.B11, now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_11), controller.RS.B11);
 
 		// Right dpad
-		controller.RD.B3 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
-		controller.RD.B5 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5);
-		controller.RD.A15 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15);
-		controller.RD.B4 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4);
+		controller.RD.B5   = handleButtonDebounce(&controller_debounced.RD.B5,  now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5),  controller.RD.B5);
+		controller.RD.B4   = handleButtonDebounce(&controller_debounced.RD.B4,  now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4),  controller.RD.B4);
+		controller.RD.A15  = handleButtonDebounce(&controller_debounced.RD.A15, now, HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15), controller.RD.A15);
+		controller.RD.B3   = handleButtonDebounce(&controller_debounced.RD.B3,  now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3),  controller.RD.B3);
 
-		// Alternate button
-		controller.ALT.A2 = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2);
-		controller.ALT.C15 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_15);
-		controller.ALT.C14 = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_14);
+		// Alternate buttons
+		controller.ALT.C15 = handleButtonDebounce(&controller_debounced.ALT.C15, now, HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_15), controller.ALT.C15);
+		controller.ALT.C14 = handleButtonDebounce(&controller_debounced.ALT.C14, now, HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_14), controller.ALT.C14);
 
 		// Joystick
-		controller.JOY.BTN = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14);
+		controller.JOY.BTN = handleButtonDebounce(&controller_debounced.JOY.BTN, now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14), controller.JOY.BTN);
 
 		// Encoder
-		controller.ENC.BTN = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15);
+		controller.ENC.BTN = handleButtonDebounce(&controller_debounced.ENC.BTN, now, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15), controller.ENC.BTN);
+		controller.ENC.VALUE = ((TIM3->CNT)>>2);
 	}
 }
 /* USER CODE END PFP */
@@ -181,9 +228,11 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_ADC_Start_DMA(&hadc1, controller.JOY.VALUE, 2);
+  HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -349,6 +398,55 @@ static void MX_TIM2_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 65535;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 10;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 10;
+  if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -415,27 +513,27 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pins : RS_C13_Pin RALT_C14_Pin LALT_C15_Pin */
-  GPIO_InitStruct.Pin = RS_C13_Pin|RALT_C14_Pin|LALT_C15_Pin;
+  /*Configure GPIO pins : RS_C13_Pin ALT_C14_Pin ALT_C15_Pin */
+  GPIO_InitStruct.Pin = RS_C13_Pin|ALT_C14_Pin|ALT_C15_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LS_A0_Pin RS_A1_Pin ALT_A2_Pin LS_A3_Pin
-                           LS_A4_Pin LS_A5_Pin LD_A6_Pin LD_A7_Pin
+  /*Configure GPIO pins : LS_A0_Pin RS_A1_Pin LS_A2_Pin LS_A3_Pin
+                           LS_A4_Pin RS_A5_Pin LD_A8_Pin LD_A11_Pin
                            RS_A12_Pin RD_A15_Pin */
-  GPIO_InitStruct.Pin = LS_A0_Pin|RS_A1_Pin|ALT_A2_Pin|LS_A3_Pin
-                          |LS_A4_Pin|LS_A5_Pin|LD_A6_Pin|LD_A7_Pin
+  GPIO_InitStruct.Pin = LS_A0_Pin|RS_A1_Pin|LS_A2_Pin|LS_A3_Pin
+                          |LS_A4_Pin|RS_A5_Pin|LD_A8_Pin|LD_A11_Pin
                           |RS_A12_Pin|RD_A15_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD_B2_Pin LS_B10_Pin RS_B11_Pin LD_B12_Pin
-                           LS_B13_Pin JOY_BTN_Pin ENC_BTN_Pin RD_B3_Pin
+  /*Configure GPIO pins : PB2 LD_B2_Pin RS_B11_Pin LD_B12_Pin
+                           RS_B13_Pin JOY_BTN_Pin ENC_BTN_Pin RD_B3_Pin
                            RD_B4_Pin RD_B5_Pin RS_B8_Pin RS_B9_Pin */
-  GPIO_InitStruct.Pin = LD_B2_Pin|LS_B10_Pin|RS_B11_Pin|LD_B12_Pin
-                          |LS_B13_Pin|JOY_BTN_Pin|ENC_BTN_Pin|RD_B3_Pin
+  GPIO_InitStruct.Pin = GPIO_PIN_2|LD_B2_Pin|RS_B11_Pin|LD_B12_Pin
+                          |RS_B13_Pin|JOY_BTN_Pin|ENC_BTN_Pin|RD_B3_Pin
                           |RD_B4_Pin|RD_B5_Pin|RS_B8_Pin|RS_B9_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;

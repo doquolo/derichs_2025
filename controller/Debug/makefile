@@ -60,8 +60,8 @@ all: main-build
 main-build: derichs_gamepad.elf secondary-outputs
 
 # Tool invocations
-derichs_gamepad.elf derichs_gamepad.map: $(OBJS) $(USER_OBJS) C:\Users\doquolo\Documents\code\derichs_controller\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "derichs_gamepad.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\doquolo\Documents\code\derichs_controller\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="derichs_gamepad.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+derichs_gamepad.elf derichs_gamepad.map: $(OBJS) $(USER_OBJS) C:\Users\doquolo\Documents\PlatformIO\Projects\derichs_final\controller\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "derichs_gamepad.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\doquolo\Documents\PlatformIO\Projects\derichs_final\controller\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="derichs_gamepad.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
