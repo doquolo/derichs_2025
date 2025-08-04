@@ -29,6 +29,10 @@ const int valveInterval = 250;
 const int valveTrigger1[16] = {41, 39, 37, 35, 33, 31, 29, 27, 40, 38, 36, 34, 32, 30, 28, 26};
 long long valveTime1[16] = {0};
 
+// GLOBAL SENSORS
+const int CB0 = 42;
+const int CB90 = 45;
+
 void initValves()
 {
   for (auto x : valveTrigger1)
@@ -49,6 +53,8 @@ const int auxm2[2] = {14, 13}; // tời tay kíp nổ
 
 void setup()
 {
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
   Serial.begin(115200);
 
   initIMU();
@@ -142,35 +148,38 @@ void processMovement()
 // periperals logic
 void processPeriperals()
 {
-  if (controller.LD.A7)
+  if (controller.LD.A11)
   {
     if (millis() - valveTime1[11] > valveInterval)
     {
       digitalWrite(valveTrigger1[11], LOW); // unlock
       Serial.println("Unlocked");
-      if (!digitalRead(45))
+      if (!digitalRead(CB90))
       { // go up
         Serial.println("Going up");
         digitalWrite(9, HIGH);
-        analogWrite(10, 255 - 10);
-        while (digitalRead(42))
+        analogWrite(10, 255 - 11);
+        while (digitalRead(CB0))
         {
           delay(25);
         }
-        analogWrite(10, 255 - 3);
+        analogWrite(10, 255 - 4);
 
         Serial.println("Done");
       }
-      else if (!digitalRead(42))
+      else if (!digitalRead(CB0))
       { // drop down
         Serial.println("Going down");
+        digitalWrite(9, HIGH);
+        analogWrite(10, 255 - 15);
+
         digitalWrite(9, LOW);
-        analogWrite(10, 255 - 10);
-        while (digitalRead(45))
+        analogWrite(10, 255 - 11);
+        while (digitalRead(CB90))
         {
           delay(25);
         }
-        digitalWrite(10, HIGH);
+        analogWrite(10, 255 - 4);
         Serial.println("Done");
       }
       Serial.println("Locked");
@@ -179,7 +188,7 @@ void processPeriperals()
     }
   }
   // *** CYLINDER ***
-  if (controller.RS.A12)
+  if (controller.RS.A5)
   {
     if (millis() - valveTime1[7] > valveInterval)
     {
@@ -187,7 +196,7 @@ void processPeriperals()
       valveTime1[7] = millis();
     }
   }
-  if (controller.RS.B9)
+  if (controller.RS.A12)
   {
     if (millis() - valveTime1[6] > valveInterval)
     {
@@ -195,7 +204,7 @@ void processPeriperals()
       valveTime1[6] = millis();
     }
   }
-  if (controller.RS.PB11)
+  if (controller.RS.B9)
   {
     if (millis() - valveTime1[5] > valveInterval)
     {
@@ -228,6 +237,8 @@ void processPeriperals()
     }
     else
     {
+      digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
+      digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
       digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
       digitalWrite(valveTrigger1[auxm2[1] - 1], HIGH);
     }
@@ -256,6 +267,8 @@ void processPeriperals()
     {
       digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
       digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
+      digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
+      digitalWrite(valveTrigger1[auxm2[1] - 1], HIGH);
     }
   }
 }
@@ -274,15 +287,15 @@ void loop()
     // Movement
 
     // Speed
-    if (controller.LS.PB10)
+    if (controller.LS.B8)
       currentSpeedUse = 0;
-    else if (controller.LS.A4)
-      currentSpeedUse = 1;
     else if (controller.LS.B13)
+      currentSpeedUse = 1;
+    else if (controller.LS.A4)
       currentSpeedUse = 2;
 
     // CW/CCW
-    if (controller.LD.A6)
+    if (controller.LD.A8)
       targetSpeed = speed[currentSpeedUse];
     else if (controller.LD.B2)
       targetSpeed = -speed[currentSpeedUse];
@@ -305,10 +318,10 @@ void loop()
     else if (controller.RS.C13)
       direction = -2;
     // drift
-    else if (controller.LS.A0)
-      direction = 2;
+    else if (controller.LS.A2)
+      direction = 3;
     else if (controller.RS.A1)
-      direction = -2;
+      direction = -3;
     // forward/backward
     else
       direction = 0;
@@ -320,9 +333,16 @@ void loop()
   else // latency > 350ms => might be disconnected
   {
     stop();
-    while (1) // kill all robot movement
+    while (Serial3.available() > 0) {
+      Serial3.read();
+      delay(25);
+    }
+    while (true) // kill all robot movement
     {
-      Serial.print(".");
+      fetchController();
+      if (connected) break;
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      delay(50);
     }
   }
   delay(25);

@@ -75,10 +75,6 @@ void Error_Handler(void);
 #define LS_A4_GPIO_Port GPIOA
 #define RS_A5_Pin GPIO_PIN_5
 #define RS_A5_GPIO_Port GPIOA
-#define ENC_A_Pin GPIO_PIN_6
-#define ENC_A_GPIO_Port GPIOA
-#define ENC_B_Pin GPIO_PIN_7
-#define ENC_B_GPIO_Port GPIOA
 #define JOY_X_Pin GPIO_PIN_0
 #define JOY_X_GPIO_Port GPIOB
 #define JOY_Y_Pin GPIO_PIN_1

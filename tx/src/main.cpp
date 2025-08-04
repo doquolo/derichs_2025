@@ -4,36 +4,31 @@
 #include <HardwareSerial.h>
 
 // REPLACE WITH YOUR RECEIVER MAC Address
-// a0:b7:65:05:8b:6c
-// cc:db:a7:2e:af:dc
-// 5c:01:3b:9c:57:c4
-// uint8_t broadcastAddress[] = {0xa0, 0xb7, 0x65, 0x05, 0x8b, 0x6c};
-// uint8_t broadcastAddress[] = {0xcc, 0xdb, 0xa7, 0x2e, 0xaf, 0xdc};
 uint8_t broadcastAddress[] = {0x5c, 0x01, 0x3b, 0x9c, 0x57, 0xc4};
 
-// Structure example to send data
+// Structure to send data
 #pragma pack(1) // Disable padding
 struct CONTROLLER_READOUT {
 	struct {
-		uint8_t A0, A3;
-		uint8_t PB10, A4, B13;
-		uint8_t A5;
+		uint8_t A2, A3;
+		uint8_t B8, B13, A4;
+		uint8_t A0;
 	}LS; // left shoulder
 	struct {
-		uint8_t B12, A6, B2, A7;
+		uint8_t A8, A11, B2, B12;
 	}LD; // left dpad
 
 	struct {
 		uint8_t C13, A1;
-		uint8_t A12, B9, PB11;
-		uint8_t B8;
+		uint8_t A5, A12, B9;
+		uint8_t PB11;
 	}RS; // right shoulder
 	struct {
-		uint8_t B3, B5, A15, B4;
+		uint8_t B5, B4, A15, B3;
 	}RD; // right dpad
 
 	struct {
-		uint8_t A2, C15, C14;
+		uint8_t C15, C14;
 	}ALT; // alternate button
 
 	struct {
@@ -60,6 +55,7 @@ esp_now_peer_info_t peerInfo;
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.printf("Check? %i - Sent? %i\n", controller.LS.A0, status == ESP_NOW_SEND_SUCCESS);
 }
+
  
 void setup() {
   // Init Serial Monitor
