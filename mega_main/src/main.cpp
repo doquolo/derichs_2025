@@ -18,11 +18,11 @@ int16_t currentAngle = 0;
 int direction = 0;
 int currentSpeed = 0;
 int targetSpeed = 0;
-int currentSpeedUse = 0;
+int currentSpeedUse = 1;
 
 // MODIFIABLE MOVEMENT VARIABLES
 const int speed[3] = {50, 100, 150};
-const int step[3] = {5, 10, 15};
+const int step[3] = {3, 7, 10};
 
 // GLOBAL VALVES TRIGGER
 const int valveInterval = 250;
@@ -86,7 +86,9 @@ void processMovement()
     else if (currentSpeed > targetSpeed)
       currentSpeed -= step[currentSpeedUse];
   }
-
+  Serial.print(currentSpeed);
+  Serial.print("-");
+  Serial.println(direction);
   // output to motor
   if (currentSpeed == 0)
     stop();
@@ -148,7 +150,7 @@ void processMovement()
 // periperals logic
 void processPeriperals()
 {
-  if (controller.LD.A11)
+  if (controller.RS.PB11) // c14 emmergency
   {
     if (millis() - valveTime1[11] > valveInterval)
     {
@@ -215,67 +217,60 @@ void processPeriperals()
 
   // *** AUX MOTOR ***
   // AUX1: tời tay quay
-  if (controller.ALT.C15)
+  if (controller.RD.B5)
   {
-    if (controller.RD.B5)
+    if (millis() - valveTime1[auxm2[0] - 1] > valveInterval)
     {
-      if (millis() - valveTime1[auxm2[0] - 1] > valveInterval)
-      {
-        digitalWrite(valveTrigger1[auxm2[0] - 1], LOW);
-        digitalWrite(valveTrigger1[auxm2[1] - 1], HIGH);
-        valveTime1[auxm2[0] - 1] = millis();
-      }
-    }
-    else if (controller.RD.A15)
-    {
-      if (millis() - valveTime1[auxm2[0] - 1] > valveInterval)
-      {
-        digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
-        digitalWrite(valveTrigger1[auxm2[1] - 1], LOW);
-        valveTime1[auxm2[0] - 1] = millis();
-      }
-    }
-    else
-    {
-      digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
-      digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
-      digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
+      digitalWrite(valveTrigger1[auxm2[0] - 1], LOW);
       digitalWrite(valveTrigger1[auxm2[1] - 1], HIGH);
+      valveTime1[auxm2[0] - 1] = millis();
+    }
+  }
+  else if (controller.RD.A15)
+  {
+    if (millis() - valveTime1[auxm2[0] - 1] > valveInterval)
+    {
+      digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
+      digitalWrite(valveTrigger1[auxm2[1] - 1], LOW);
+      valveTime1[auxm2[0] - 1] = millis();
     }
   }
   else
   {
-    if (controller.RD.B5)
+    digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
+    digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
+    digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
+    digitalWrite(valveTrigger1[auxm2[1] - 1], HIGH);
+  }
+  if (controller.RD.B4)
+  {
+    if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
     {
-      if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
-      {
-        digitalWrite(valveTrigger1[auxm1[0] - 1], LOW);
-        digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
-        valveTime1[auxm1[0] - 1] = millis();
-      }
+      digitalWrite(valveTrigger1[auxm1[0] - 1], LOW);
+      digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
+      valveTime1[auxm1[0] - 1] = millis();
     }
-    else if (controller.RD.A15)
-    {
-      if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
-      {
-        digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
-        digitalWrite(valveTrigger1[auxm1[1] - 1], LOW);
-        valveTime1[auxm1[0] - 1] = millis();
-      }
-    }
-    else
+  }
+  else if (controller.RD.B3)
+  {
+    if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
     {
       digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
-      digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
-      digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
-      digitalWrite(valveTrigger1[auxm2[1] - 1], HIGH);
+      digitalWrite(valveTrigger1[auxm1[1] - 1], LOW);
+      valveTime1[auxm1[0] - 1] = millis();
     }
+  }
+  else
+  {
+    digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
+    digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
   }
 }
 
 void loop()
 {
   fetchController();
+  // sendTelemetry();
 
   if (connected) // if latency < 350ms
   {
@@ -294,37 +289,54 @@ void loop()
     else if (controller.LS.A4)
       currentSpeedUse = 2;
 
-    // CW/CCW
-    if (controller.LD.A8)
-      targetSpeed = speed[currentSpeedUse];
-    else if (controller.LD.B2)
-      targetSpeed = -speed[currentSpeedUse];
-    else
-      targetSpeed = 0;
-
     // side move
     // direction case:
     // 0: forward/backward
     // 1: side move
     // 2: spin
     // 3: drift
-    if (controller.RD.B4)
+    // side move
+    if (controller.LD.A11)
+    {
       direction = 1;
-    else if (controller.RD.B3)
+      targetSpeed = speed[currentSpeedUse];
+    }
+    else if (controller.LD.B12)
+    {
       direction = -1;
+      targetSpeed = speed[currentSpeedUse];
+    }
     // spin
     else if (controller.LS.A3)
+    {
       direction = 2;
+      targetSpeed = speed[currentSpeedUse];
+    }
     else if (controller.RS.C13)
+    {
       direction = -2;
-    // drift
-    else if (controller.LS.A2)
-      direction = 3;
-    else if (controller.RS.A1)
-      direction = -3;
-    // forward/backward
+      targetSpeed = speed[currentSpeedUse];
+    }
     else
-      direction = 0;
+    {
+      // CW/CCW
+      // forward/backward
+      if (controller.LD.A8) {
+        targetSpeed = speed[currentSpeedUse];
+        direction = 0;
+      }
+      else if (controller.LD.B2) {
+        targetSpeed = -speed[currentSpeedUse];
+        direction = 0;
+      }
+      else
+      targetSpeed = 0;
+      // drift
+      if (controller.LS.A2)
+        direction = 3;
+      else if (controller.RS.A1)
+        direction = -3;
+    }
 
     processMovement();
 
@@ -333,14 +345,16 @@ void loop()
   else // latency > 350ms => might be disconnected
   {
     stop();
-    while (Serial3.available() > 0) {
+    while (Serial3.available() > 0)
+    {
       Serial3.read();
       delay(25);
     }
     while (true) // kill all robot movement
     {
       fetchController();
-      if (connected) break;
+      if (connected)
+        break;
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       delay(50);
     }

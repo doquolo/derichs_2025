@@ -1,13 +1,13 @@
 #include <Arduino.h>
 
-const int DIR1 = 7;
-const int PWM1 = 8;
-const int DIR2 = 5;
-const int PWM2 = 6;
-const int DIR3 = 3;
-const int PWM3 = 4;
-const int DIR4 = 44;
-const int PWM4 = 2;
+const int DIR4 = 7;
+const int PWM4 = 8;
+const int DIR3 = 5;
+const int PWM3 = 6;
+const int DIR2 = 3;
+const int PWM2 = 4;
+const int DIR1 = 44;
+const int PWM1 = 2;
 
 void m1(int speed)
 {
@@ -111,7 +111,7 @@ void backward(int speed, int pid = 0)
     m4(-(speed + pid));
 }
 
-void sideRight(int speed, int pid = 0)
+void sideLeft(int speed, int pid = 0)
 {
     m1((speed - pid));
     m2(-(speed - pid));
@@ -119,7 +119,7 @@ void sideRight(int speed, int pid = 0)
     m4(-(speed + pid));
 }
 
-void sideLeft(int speed, int pid = 0)
+void sideRight(int speed, int pid = 0)
 {
     m1(-(speed + pid));
     m2((speed + pid));
@@ -141,13 +141,13 @@ void rotateLeft(int speed) {
     m4(-speed);
 }
 
-void driftLeft(int speed) {
+void driftRight(int speed) {
     m1(speed*(1));
     m2(speed*(0));
     m3(speed*(0.5));
     m4(speed*1.5);
 }
-void driftRight(int speed) {
+void driftLeft(int speed) {
     m1(speed*(0));
     m2(speed*(1));
     m3(speed*1.5);
