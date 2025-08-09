@@ -4,14 +4,14 @@
 #include <motors.hpp>
 #include <imu.hpp>
 
-// // Servo
-// #include <ServoMotor.hpp>
-// ServoMotor s1(10, 9, 13, 19.5, 4);
+// Servo
+#include <ServoMotor.hpp>
+ServoMotor s1(10, 9, 500, 14, 4);
 
-// void initServoMotor() {
-//   s1.begin();
-//   s1.setDriveSpeed(3500);
-// }
+void initServoMotor() {
+  s1.begin();
+  s1.setDriveSpeed(350);
+}
 
 // GLOBAL MOVEMENT VARIABLES
 int16_t currentAngle = 0;
@@ -48,8 +48,8 @@ void initValves()
 }
 
 // GLOBAL AUX MOTORS
-const int auxm1[2] = {15, 16}; // tời tay quay
-const int auxm2[2] = {14, 13}; // tời tay kíp nổ
+const int auxm1[2] = {14, 13}; // tời tay kíp nổ
+const int auxm2[2] = {15, 16}; // tời tay quay
 
 void setup()
 {
@@ -61,7 +61,7 @@ void setup()
 
   initMotor();
 
-  // initServoMotor();
+  initServoMotor();
 
   initValves();
 
@@ -150,46 +150,21 @@ void processMovement()
 // periperals logic
 void processPeriperals()
 {
-  if (controller.RS.PB11) // c14 emmergency
+  if (controller.RS.PB11) // tay quay
   {
     if (millis() - valveTime1[11] > valveInterval)
     {
       digitalWrite(valveTrigger1[11], LOW); // unlock
       Serial.println("Unlocked");
-      if (!digitalRead(CB90))
-      { // go up
-        Serial.println("Going up");
-        digitalWrite(9, HIGH);
-        analogWrite(10, 255 - 11);
-        while (digitalRead(CB0))
-        {
-          delay(25);
-        }
-        analogWrite(10, 255 - 4);
-
-        Serial.println("Done");
-      }
-      else if (!digitalRead(CB0))
-      { // drop down
-        Serial.println("Going down");
-        digitalWrite(9, HIGH);
-        analogWrite(10, 255 - 15);
-
-        digitalWrite(9, LOW);
-        analogWrite(10, 255 - 11);
-        while (digitalRead(CB90))
-        {
-          delay(25);
-        }
-        analogWrite(10, 255 - 4);
-        Serial.println("Done");
-      }
+      s1.write((s1.getAngle() >= 90) ? 0 : 90);
       Serial.println("Locked");
       digitalWrite(valveTrigger1[11], HIGH); // lock
       valveTime1[11] = millis();
     }
   }
   // *** CYLINDER ***
+
+  // tay chinh 1
   if (controller.RS.A5)
   {
     if (millis() - valveTime1[7] > valveInterval)
@@ -198,6 +173,7 @@ void processPeriperals()
       valveTime1[7] = millis();
     }
   }
+  // tay chinh 2
   if (controller.RS.A12)
   {
     if (millis() - valveTime1[6] > valveInterval)
@@ -206,6 +182,7 @@ void processPeriperals()
       valveTime1[6] = millis();
     }
   }
+  // tay chinh 3
   if (controller.RS.B9)
   {
     if (millis() - valveTime1[5] > valveInterval)
@@ -214,9 +191,32 @@ void processPeriperals()
       valveTime1[5] = millis();
     }
   }
-
   // *** AUX MOTOR ***
-  // AUX1: tời tay quay
+  // toi tay ngoc
+  if (controller.JOY.VALUE[0] > 4000)
+  {
+    if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
+    {
+      digitalWrite(valveTrigger1[auxm1[0] - 1], LOW);
+      digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
+      valveTime1[auxm1[0] - 1] = millis();
+    }
+  }
+  else if (controller.JOY.VALUE[0] < 20)
+  {
+    if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
+    {
+      digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
+      digitalWrite(valveTrigger1[auxm1[1] - 1], LOW);
+      valveTime1[auxm1[0] - 1] = millis();
+    }
+  }
+  else
+  {
+    digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
+    digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
+  }
+  // toi tay chinh
   if (controller.RD.B5)
   {
     if (millis() - valveTime1[auxm2[0] - 1] > valveInterval)
@@ -237,33 +237,48 @@ void processPeriperals()
   }
   else
   {
-    digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
-    digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
     digitalWrite(valveTrigger1[auxm2[0] - 1], HIGH);
     digitalWrite(valveTrigger1[auxm2[1] - 1], HIGH);
   }
+  // tay kho ngoc
+  if (controller.JOY.BTN) {
+    if (millis() - valveTime1[4] > valveInterval)
+    {
+      digitalWrite(valveTrigger1[4], !digitalRead(valveTrigger1[4]));
+      valveTime1[4] = millis();
+    }
+  }
+   // tay ngoc 1
+   if (controller.RD.B3)
+   {
+    if (millis() - valveTime1[3] > valveInterval)
+    {
+      digitalWrite(valveTrigger1[3], !digitalRead(valveTrigger1[3]));
+      valveTime1[3] = millis();
+    }
+  }
+  // tay ngoc 2
   if (controller.RD.B4)
   {
-    if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
+    if (millis() - valveTime1[2] > valveInterval)
     {
-      digitalWrite(valveTrigger1[auxm1[0] - 1], LOW);
-      digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
-      valveTime1[auxm1[0] - 1] = millis();
+      digitalWrite(valveTrigger1[2], !digitalRead(valveTrigger1[2]));
+      valveTime1[2] = millis();
     }
   }
-  else if (controller.RD.B3)
-  {
-    if (millis() - valveTime1[auxm1[0] - 1] > valveInterval)
+  if (!controller.ENC.BTN) {
+    if (millis() - valveTime1[1] > valveInterval)
     {
-      digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
-      digitalWrite(valveTrigger1[auxm1[1] - 1], LOW);
-      valveTime1[auxm1[0] - 1] = millis();
-    }
+      digitalWrite(valveTrigger1[1], !digitalRead(valveTrigger1[1]));
+      valveTime1[1] = millis();
+    }  
   }
-  else
-  {
-    digitalWrite(valveTrigger1[auxm1[0] - 1], HIGH);
-    digitalWrite(valveTrigger1[auxm1[1] - 1], HIGH);
+  if (controller.ALT.C14) {
+    if (millis() - valveTime1[0] > valveInterval)
+    {
+      digitalWrite(valveTrigger1[0], !digitalRead(valveTrigger1[0]));
+      valveTime1[0] = millis();
+    }  
   }
 }
 

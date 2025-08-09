@@ -26,8 +26,8 @@ struct CONTROLLER_READOUT {
 	}ALT; // alternate button
 
 	struct {
-		uint8_t BTN;
 		uint16_t VALUE[2];
+		uint8_t BTN;
 	}JOY; // joystick
 
 	struct {

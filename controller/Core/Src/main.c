@@ -124,8 +124,8 @@ struct CONTROLLER_READOUT {
 	} ALT; // alternate button
 
 	struct {
-		uint8_t BTN;
 		uint16_t VALUE[2];
+		uint8_t BTN;
 	} JOY; // joystick
 
 	struct {
@@ -219,7 +219,7 @@ uint8_t u8x8_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr) {
 
 static u8g2_t u8g2;
 
-const uint32_t buttonDebounceTime = 50; // ms
+const uint32_t buttonDebounceTime = 0; // ms
 static uint8_t handleButtonDebounce(uint32_t *prev_time, uint32_t now,
 		uint8_t newState, uint8_t currentState) {
 	if (newState == currentState)
@@ -313,8 +313,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART1) {
         if (rx_byte == '\n' || rx_index >= RX_BUFFER_SIZE - 1) {
             rx_line_buffer[rx_index] = '\0'; // Null-terminate
-            u8g2_ClearBuffer(&u8g2); // Clear the buffer before drawing
-			u8g2_DrawStr(&u8g2, 80, 10, rx_line_buffer);
+			u8g2_DrawStr(&u8g2, 80, 25, rx_line_buffer);
 			u8g2_SendBuffer(&u8g2); // Transfer the buffer to the display
             rx_index = 0; // Reset for next line
         } else {
@@ -374,7 +373,7 @@ int main(void)
 
 	HAL_UART_Receive_IT(&huart1, &rx_byte, 1);
 	HAL_TIM_Base_Start_IT(&htim2);
-	HAL_ADC_Start_DMA(&hadc1, controller.JOY.VALUE, 2);
+	HAL_ADC_Start_DMA(&hadc1, (uint16_t*)controller.JOY.VALUE, 2);
 	HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
 	/* Initialize Display */
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0, u8x8_i2c,
@@ -388,7 +387,8 @@ int main(void)
 	HAL_Delay(2000);
 	u8g2_ClearBuffer(&u8g2); // Clear the buffer before drawing
 	u8g2_SetFont(&u8g2, u8g2_font_6x10_tr);
-	u8g2_DrawStr(&u8g2, 80, 10, "No data!");
+	u8g2_DrawStr(&u8g2, 80, 20, "No data!");
+	u8g2_DrawStr(&u8g2, 0, 10, "Robot 1");
 	u8g2_SendBuffer(&u8g2); // Transfer the buffer to the display
 	HAL_Delay(150);
 

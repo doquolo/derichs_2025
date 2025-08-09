@@ -6,6 +6,8 @@
 // REPLACE WITH YOUR RECEIVER MAC Address
 uint8_t broadcastAddress[] = {0x5c, 0x01, 0x3b, 0x9c, 0x57, 0xc4};
 
+const int led = 18;
+
 // Structure to send data
 #pragma pack(1) // Disable padding
 struct CONTROLLER_READOUT {
@@ -32,8 +34,8 @@ struct CONTROLLER_READOUT {
 	}ALT; // alternate button
 
 	struct {
-		uint8_t BTN;
 		uint16_t VALUE[2];
+		uint8_t BTN;
 	}JOY; // joystick
 
 	struct {
@@ -54,10 +56,18 @@ esp_now_peer_info_t peerInfo;
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.printf("Check? %i - Sent? %i\n", controller.LS.A0, status == ESP_NOW_SEND_SUCCESS);
+  if (status == ESP_NOW_SEND_SUCCESS) {
+    digitalWrite(led, !digitalRead(led));
+  }
 }
 
  
 void setup() {
+
+  // init led
+  pinMode(led, OUTPUT);
+  digitalWrite(led, LOW);
+
   // Init Serial Monitor
   Serial.begin(115200);
 
